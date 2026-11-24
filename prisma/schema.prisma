@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  handle       String   @unique
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  bio          String   @default("")
+  avatarUrl    String   @default("")
+  createdAt    DateTime @default(now())
+
+  posts    Post[]
+  likes    Like[]
+  comments Comment[]
+
+  following Follow[] @relation("FollowerToFollowing")
+
+  followers Follow[] @relation("FollowingToFollower")
+
+  @@index([handle])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  content   String
+  mediaUrl  String?
+  createdAt DateTime @default(now())
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  likes    Like[]
+  comments Comment[]
+
+  @@index([authorId, createdAt])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("FollowerToFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("FollowingToFollower", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+  @@index([followerId])
+}
+
+model Like {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@index([postId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+}
